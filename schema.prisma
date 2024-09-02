@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["reactNative"]
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./app.db"
+}
+
+model User {
+    id             Int      @id @default(autoincrement())
+    username       String   @unique
+    avatar         String   @default("https://ik.imagekit.io/yu1iaw/avatar_penguin.png?updatedAt=1724748306150")
+    email          String   @unique
+    hashedPassword String
+    videos         Video[]
+    liked          Like[]
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @default(now())
+}
+
+model Video {
+    id        Int      @id @default(autoincrement())
+    title     String
+    prompt    String
+    thumbnail String
+    video     String
+    creator   User     @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    creatorId Int
+    likes     Like[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+}
+
+model Like {
+    id        Int      @id @default(autoincrement())
+    user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    userId    Int?
+    video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    videoId   Int
+    createdAt DateTime @default(now())
+
+    // @@id([videoId, userId])
+}
