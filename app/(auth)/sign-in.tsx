@@ -1,9 +1,10 @@
-import { FormField, PrimaryBtn } from '@/components';
+import { ErrorBoundary, FormField, PrimaryBtn } from '@/components';
 import { images } from '@/constants';
 import { useUserContext } from '@/contexts/user-provider';
 import { findUserByEmail } from '@/lib/prisma';
 import { storeData } from '@/lib/storage-helper';
 import tw from '@/lib/tailwind';
+import { emailSchema, passwordSchema } from '@/lib/validation';
 import { Motion } from '@legendapp/motion';
 import { Href, Link } from 'expo-router';
 import { useState } from 'react';
@@ -12,15 +13,39 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 
+const schema = {
+    email: emailSchema,
+    password: passwordSchema
+} as const; 
+
+const initialValues = {
+    email: "",
+    password: ""
+} as const;
+
 const { width } = Dimensions.get("screen");
 
 export default function SignIn() {
-    const { setUser, setIsLoggedIn } = useUserContext();
+    const [form, setForm] = useState(initialValues);
+    const [error, setError] = useState(initialValues);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [form, setForm] = useState({
-        email: "",
-        password: ""
-    });
+    const { setUser, setIsLoggedIn } = useUserContext();
+
+
+    const onChangeText = (text: string, inputName: "email" | "password") => {
+        setError({ ...error, [inputName]: '' });
+        setForm({ ...form, [inputName]: text });
+    }
+
+    const onBlur = (inputName: "email" | "password") => {
+        let errorMessage = '';
+        const validatedInput = schema[inputName].safeParse(form[inputName]);
+        if (!validatedInput.success) {
+            errorMessage = validatedInput.error.errors[0].message;
+        }
+
+        setError({ ...error, [inputName]: errorMessage });
+    }
 
     const onSubmit = async () => {
         if (!form.email || !form.password) {
@@ -72,26 +97,32 @@ export default function SignIn() {
                         />
                         <Text style={tw`text-2xl text-white font-psemibold mt-10`}>Log in to Aora</Text>
                     </View>
-                    <FormField
-                        title="Email"
-                        value={form.email}
-                        handleChangeText={(text: string) => setForm({ ...form, email: text })}
-                        otherStyles="mt-7"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                    <FormField
-                        title="Password"
-                        value={form.password}
-                        handleChangeText={(text: string) => setForm({ ...form, password: text })}
-                        otherStyles="mt-7"
-                        autoCapitalize='none'
-                    />
+                    <ErrorBoundary error={error.email}>
+                        <FormField
+                            title="Email"
+                            value={form.email}
+                            handleChangeText={(text) => onChangeText(text, "email")}
+                            onBlur={() => onBlur("email")}
+                            otherStyles="mt-7"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    </ErrorBoundary>
+                    <ErrorBoundary error={error.password}>
+                        <FormField
+                            title="Password"
+                            value={form.password}
+                            handleChangeText={(text) => onChangeText(text, "password")}
+                            onBlur={() => onBlur("password")}
+                            otherStyles="mt-7"
+                            autoCapitalize='none'
+                        />
+                    </ErrorBoundary>
                     <PrimaryBtn
                         title='Sign in'
                         handlePress={onSubmit}
                         containerStyles='mt-11'
-                        isLoading={isSubmitting}
+                        isLoading={isSubmitting || Object.values(error).some(Boolean)}
                     />
                     <View style={tw`flex-row pt-5 flex-center gap-2`}>
                         <Text style={tw`text-lg text-gray-100 font-pregular`}>Don't have an account?</Text>

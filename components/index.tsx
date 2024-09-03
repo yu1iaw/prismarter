@@ -1,5 +1,6 @@
 export { BookmarkIcon } from '@/components/bookmark-icon';
 export { EmptyList } from '@/components/empty-list';
+export { ErrorBoundary } from '@/components/error-boundary';
 export { FormField } from '@/components/form-field';
 export { InfoBox } from '@/components/info-box';
 export { MotionContainer } from '@/components/motion-container';
